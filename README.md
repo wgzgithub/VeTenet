@@ -1,29 +1,39 @@
 # TENET
-A tool for reconstructing Transfer Entropy-based causal gene NETwork from pseudo-time ordered single cell transcriptomic data 
-
+A tool intergrates trajectory inference and reconstruction of GRN by calculating transfer entropy(TF)
+See indepent version:
+ 
 <div>
 <img src="https://user-images.githubusercontent.com/33104430/83049138-fe23bb00-a04a-11ea-9d8a-59ca7582e759.png" width="90%"></img>
 </div>
 
 ## Citation
-https://www.biorxiv.org/content/10.1101/2019.12.20.884163v1.abstract
+
 
 ## Dependency
 
 	openmpi
 	JPype
+	rpy2
+	princurve
 
-## 1. Run TENET using expression data in a csv file and pseudotime result in a text file
-#### Usage
+## 1. Run VeTenet using expression data in a csv file and RNA velocity files in txt format
+#### Initialize an example
+	import VeTenet as vt
+	ex1 = vt.VeTenet("embedding.txt", "delta_embedding.txt")
+	
+#### Execute trajectory inference 
+	
+	ex1.vetra(deltaThreshold=12, WCCsizeCutoff=5, clusternumber=3)
 
-	./TENET [expression_file_name] [number_of_threads] [trajectory_file_name] [cell_select_file_name] [history_length]
 
-#### example
+#### Run TENET for all trajectories 
+	
+	ex1.run_tenet_tf(expression="chroman_exp_filtered.csv", thread= 15, history_len = 1, species = 'mouse', bulk_run=True)
+	
+#### Make GRNs for  all trajectories 
+	
+	ex1.makeGRN_tf(method= "links", threshold = 1000, bulk_run=True)
 
-	./TENET expression_data.csv 10 trajectory.txt cell_select.txt 1
-
-
-#### Input 
 
 ###### (1) expression_file - a csv file with N cells in the rows and M genes in the columns (same format with wishbone pseudotime package).
 
@@ -41,29 +51,24 @@ https://www.biorxiv.org/content/10.1101/2019.12.20.884163v1.abstract
 
 	CELL_N
 
-###### (2) number_of_threads - You can use this multi-threads option. This will take lots of memory depending on the squared number of genes * the number of cells. If the program fail, you need to reduce this.
 
-###### (3) trajectory_file - a text file of pseudotime data with N time points in the same order as the N cells of the expression file.
+###### (2) embedding_file - a txt file with N cells in rows and 2D embedding coordinates in columns. The 2D embedding can be results of PCA, tSNE, or UMAP.
 
-	0.098
-	0.040
-	0.023
+	-1.662885950152473424e-02 -1.019793607352199594e-01
 	.
 	.
 	.
-	0.565
+	2.932140719083742297e-02 2.628113801391315230e-01
 
-###### (4) cell_select_file - a text file of cell selection data with N Boolean (1 for select and 0 for non-select) data in the same order as the N cells of the expression file.
+###### (3) delta_embedding_file - a txt file with N cells in rows and 2D velocity vectorss in columns. Users can run "velocyto"(http://velocyto.org/) or "scVelo" (https://github.com/theislab/scvelo) to get delta_embedding.
 
-	1
-	1
-	0
+	-6.344244118975589153e+00 1.268898329669120084e+00
 	.
 	.
 	.
-	1
+	-3.511296625112249714e+00 -3.950214438779450082e-02
 
-###### (5) history_length - the length of history. In the benchmark data TENET provides best result when the length of history set to 1.
+###### (4) history_length - the length of history. In the benchmark data TENET provides best result when the length of history set to 1.
 
 #### Output
 
@@ -78,73 +83,4 @@ https://www.biorxiv.org/content/10.1101/2019.12.20.884163v1.abstract
 	.
 	GENE_M	0.34	0.012	0.032	...	0
 
-## 2. Run TENET with hdf5 file including PAGA pseudotime result
-#### Usage
 
-	./TENET4PAGAhdf5 [hdf5_file_name] [number_of_threads] [history_length]
-
-#### example
-
-	./TENET4PAGAhdf5 Data.Tuck/Tuck_PAGA510genes.h5ad 10 1
-
-## 3. Run TENET from TF to target using expression data in a csv file and pseudotime result in a text file
-#### Usage
-
-        ./TENET_TF [expression_file_name] [number_of_threads] [trajectory_file_name] [cell_select_file_name] [history_length] [species]
-
-#### example
-
-        ./TENET_TF expression_data.csv 10 trajectory.txt cell_select.txt 1 mouse
-
-#### Input
-
-###### (6) species - [human/mouse/rat]
-
-#### Output
-
-        TE_result_matrix.txt
-
-## 4. Downstream analysis
-
-#### (1) Reconstructing GRN
-###### Usage
-	python makeGRN.py [cutoff for FDR]
-	python makeGRNsameNumberOfLinks.py [number of links]
-	python makeGRNbyTF.py [species] [cutoff for FDR]
-	python makeGRNbyTFsameNumberOfLinks.py [species] [number of links]
-	** Note that "TE_result_matrix.txt" should be in the same folder.
-
-###### Example
-	python makeGRN.py 0.01
-	python makeGRNsameNumberOfLinks.py 1000
-	python makeGRNbyTF.py human 0.01
-	python makeGRNbyTFsameNumberOfLinks.py human 1000
-
-###### Output file
-	TE_result_matrix.fdr0.01.sif
-	TE_result_matrix.NumberOfLinks1000.sif
-	TE_result_matrix.byGRN.fdr0.01.sif
-	TE_result_matrix.byGRN.NumberOflinks1000.sif
-
-###### Parameter
-	[cutoff for fdr] - A cutoff value for FDR by z-test
-	[number of links] - The number of links of the GRN
-	[species] - User can choose human or mouse
-
-#### (2) Trimming indirect edges
-###### Usage
-	python trim_indirect.py [name of GRN] [cutoff]
-###### Example
-	python trim_indirect.py TE_result_matrix.fdr0.01.sif 0
-###### Output file
-	TE_result_matrix.fdr0.01.trimIndirect0.0.sif
-###### Parameter
-	[cutoff] - A cutoff value for trimming indirect edges. Recommended range is -0.1 to 0.1
-
-#### (3) Counting out-degree of a given GRN
-###### Usage
-	python countOutdegree.py [name of GRN]
-###### Example
-	python countOutdegree.py TE_result_matrix.fdr0.01.sif
-###### Output file
-	TE_result_matrix.fdr0.01.sif.outdegree.txt
