@@ -1,10 +1,7 @@
 # TENET
 A tool intergrates trajectory inference and reconstruction of GRN by calculating transfer entropy(TF)
 See indepent version:
- 
-<div>
-<img src="https://user-images.githubusercontent.com/33104430/83049138-fe23bb00-a04a-11ea-9d8a-59ca7582e759.png" width="90%"></img>
-</div>
+
 
 ## Citation
 
