@@ -1,5 +1,5 @@
-# TENET
-A tool intergrates trajectory inference and reconstruction of GRN by calculating transfer entropy(TF)
+# VeTenet
+A tool intergrating Vetra a trajectory inference tool and TENET a GRN reconstruction tool
 See indepent version:
 
 
